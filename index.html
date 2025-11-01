@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Sindicatos Municipales - Buenos Aires</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+                header {
+            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%) !important;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo i {
+            font-size: 2.5rem;
+        }
+        
+        .logo-text h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        .logo-text p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-box .number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-box .label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .export-btn {
+            padding: 10px 15px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .export-btn:hover {
+            background: #3367d6;
+        }
+        
+        .export-btn.csv {
+            background: #0f9d58;
+        }
+        
+        .export-btn.csv:hover {
+            background: #0b8043;
+        }
+        
+        .export-btn.json {
+            background: #db4437;
+        }
+        
+        .export-btn.json:hover {
+            background: #c23325;
+        }
+        
+        .sidebar {
+            width: 400px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .filters {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .filter-group {
+            margin-bottom: 15px;
+        }
+        
+        .filter-group h3 {
+            margin-bottom: 10px;
+            color: #1e3c72;
+            font-size: 1.1rem;
+        }
+        
+        .region-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e1e5eb;
+            border-radius: 6px;
+        }
+        
+        .region-list li {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e1e5eb;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .region-list li:hover {
+            background: #f0f5ff;
+        }
+        
+        .region-list li.active {
+            background: #e3eeff;
+            border-left: 4px solid #1e3c72;
+            font-weight: 600;
+        }
+        
+        .municipio-count {
+            background: #1e3c72;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .search-box {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border: 1px solid #e1e5eb;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        .sindicatos-list {
+            padding: 0 20px 20px;
+        }
+        
+        .sindicato-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 15px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #1e3c72;
+        }
+        
+        .sindicato-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sindicato-card h3 {
+            color: #1e3c72;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .sindicato-card .location {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .sindicato-card .contact {
+            font-size: 0.9rem;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .sindicato-card .secretario {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #e1e5eb;
+        }
+        
+        .secretario-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e3eeff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e3c72;
+            font-weight: bold;
+        }
+        
+        .secretario-info h4 {
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+        
+        .secretario-info p {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .region-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .leaflet-popup-content {
+            width: 350px !important;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .popup-header h3 {
+            color: #1e3c72;
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        
+        .popup-content .info-line {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .popup-content .info-line i {
+            width: 20px;
+            color: #1e3c72;
+            margin-right: 10px;
+        }
+        
+        .popup-secretario {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e1e5eb;
+        }
+        
+        .popup-secretario-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #e3eeff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e3c72;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .foto-secretario {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #1e3c72;
+        }
+        
+        .popup-secretario-info h4 {
+            margin: 0 0 5px 0;
+            font-size: 1rem;
+        }
+        
+        .popup-secretario-info p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .contact-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .contact-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            font-size: 0.85rem;
+            min-width: 80px;
+        }
+        
+        .contact-btn:hover {
+            background: #2a5298;
+        }
+        
+        .servicios-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .servicio-tag {
+            background: #e3eeff;
+            color: #1e3c72;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+        
+        .documentos-list {
+            margin-top: 10px;
+        }
+        
+        .documento-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .documento-item:last-child {
+            border-bottom: none;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #dee2e6;
+        }
+        
+        @media (max-width: 992px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 40vh;
+            }
+            
+            .map-container {
+                height: 60vh;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .export-buttons {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-map-marked-alt"></i>
+                <div class="logo-text">
+                    <h1>Sindicatos Municipales de Buenos Aires</h1>
+                    <p>Federación Municipal - 9 Regiones - 135 Municipios</p>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat-box">
+                    <span class="number">135</span>
+                    <span class="label">Municipios</span>
+                </div>
+                <div class="stat-box">
+                    <span class="number">9</span>
+                    <span class="label">Regiones</span>
+                </div>
+                <div class="stat-box">
+                    <span class="number">80+</span>
+                    <span class="label">Con Datos</span>
+                </div>
+            </div>
+            <div class="export-buttons">
+                <button class="export-btn" onclick="exportToMyMaps()">
+                    <i class="fas fa-map"></i> Exportar a My Maps
+                </button>
+                <button class="export-btn csv" onclick="exportToCSV()">
+                    <i class="fas fa-file-csv"></i> Descargar CSV
+                </button>
+                <button class="export-btn json" onclick="exportToJSON()">
+                    <i class="fas fa-file-code"></i> Descargar JSON
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="filters">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar municipio o secretario...">
+                </div>
+                
+                <div class="filter-group">
+                    <h3>Filtrar por Región</h3>
+                    <ul class="region-list" id="regionList">
+                        <!-- Las regiones se cargarán dinámicamente -->
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="sindicatos-list" id="sindicatosList">
+                <div class="empty-state">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Selecciona una región</h3>
+                    <p>Elige una región de la lista para ver los sindicatos municipales</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>        // ESTRUCTURA COMPLETA DE LAS 9 REGIONES
+        const regiones = {
+            region1: {
+                nombre: "Zona I - Metropolitana Norte",
+                municipios: ["Escobar", "General Las Heras", "General Rodríguez", "José C. Paz", "Luján", "Malvinas Argentinas", "Mercedes", "Navarro", "Pilar", "San Fernando", "San Isidro", "Suipacha", "Tigre", "Vicente López"],
+                color: '#1e3c72'
+            },
+            region2: {
+                nombre: "Zona II - Metropolitana Oeste",
+                municipios: ["General San Martín", "Hurlingham", "Ituzaingó", "Marcos Paz", "Merlo", "Moreno", "Morón", "San Miguel", "Tres de Febrero"],
+                color: '#2a5298'
+            },
+            region3: {
+                nombre: "Zona III - Norte",
+                municipios: ["Arrecifes", "Baradero", "Campana", "Capitán Sarmiento", "Carmen de Areco", "Colón", "Exaltación de la Cruz", "Pergamino", "Ramallo", "Rojas", "Salto", "San Andrés de Giles", "San Antonio de Areco", "San Nicolás", "San Pedro", "Zárate"],
+                color: '#3a6bc2'
+            },
+            region4: {
+                nombre: "Zona IV - Metropolitana Sur",
+                municipios: ["Almirante Brown", "Avellaneda", "Berazategui", "Berisso", "Coronel Brandsen", "Cañuelas", "Chascomus", "Ensenada", "Esteban Echeverría", "Ezeiza", "Florencio Varela", "General Belgrano", "General Paz", "Lanús", "La Matanza", "La Plata", "Las Flores", "Lomas de Zamora", "Lobos", "Magdalena", "Monte", "Presidente Perón", "Punta de Indio", "Quilmes", "San Vicente"],
+                color: '#4a85e6'
+            },
+            region5: {
+                nombre: "Zona V - Centro Oeste",
+                municipios: ["Alberti", "Ameghino", "Bragado", "Carlos Casares", "Carlos Tejedor", "Chacabuco", "Chivilcoy", "Daireaux", "General Arenales", "General Pinto", "General Viamonte", "General Villegas", "Hipólito Irigoyen", "Junín", "Leandro N. Alem", "Lincoln", "Nueve de Julio", "Pehuajó", "Pellegrini", "Rivadavia", "Salliquelo", "Trenque Launquen", "Tres Lomas"],
+                color: '#5a9fff'
+            },
+            region6: {
+                nombre: "Zona VI - Sudeste",
+                municipios: ["Ayacucho", "Balcarce", "Castelli", "De la Costa", "Dolores", "General Alvarado", "General Guido", "General Lavalle", "General Madariaga", "General Pueyrredón", "Lezama", "Lobería", "Maipú", "Mar Chiquita", "Necochea", "Pila", "Pinamar", "Rauch", "San Cayetano", "Tandil", "Tordillo", "Villa Gesell"],
+                color: '#6ab8ff'
+            },
+            region7: {
+                nombre: "Zona VII - Sudoeste",
+                municipios: ["Adolfo Alsina", "Benito Juárez", "Coronel Dorrego", "Coronel Pringles", "Coronel Suarez", "General Lamadrid", "González Chavez", "Guaminí", "Laprida", "Tres Arroyos"],
+                color: '#7ad1ff'
+            },
+            region8: {
+                nombre: "Zona VIII - Sur",
+                municipios: ["Bahía Blanca", "Coronel Rosales", "Monte Hermoso", "Patagones", "Puán", "Saavedra", "Tornquist", "Villarino"],
+                color: '#8aeaff'
+            },
+            region9: {
+                nombre: "Zona IX - Centro",
+                municipios: ["Azul", "Bolívar", "General Alvear", "Olavarría", "Roque Pérez", "Saladillo", "Tapalqué", "Veinticinco de Mayo"],
+                color: '#9af3ff'
+            }
+        };
+
+                // DATOS COMPLETOS DE LOS 135 MUNICIPIOS
+        let sindicatos = [
+            // ZONA I - METROPOLITANA NORTE (14 municipios)
+                        {
+                municipio: "Escobar",
+                secretario: "Eduardo Avellaneda",
+                telefono: "1553858616",
+                email: "",
+                direccion: "Corrientes 500, B1625BCL Belén de Escobar, Provincia de Buenos Aires",
+                horarios: "Lunes a Viernes 8:00-16:00",
+                afiliados: 650,
+                servicios: ["Asesoría legal", "Obra social", "Capacitaciones", "Asistencia gremial"],
+                fotoSecretario: "https://i.postimg.cc/phj024TX/escobar-secretario.jpg",
+                redesSociales: [
+                    { plataforma: "Facebook", url: "https://www.facebook.com/sindi.escobar.73" }
+                ],
+                documentos: [
+                    { nombre: "Estatuto Social", url: "documentos/escobar/estatuto.pdf", tipo: "pdf" },
+                    { nombre: "Convenio Colectivo", url: "documentos/escobar/convenio.pdf", tipo: "pdf" }
+                ],
+                fechaFundacion: "",
+                sedePropia: true,
+                cantidadDelegados: 0,
+                region: "region1",
+                lat: -34.341266,
+                lng: -58.799885
+            },
+            { municipio: "General Las Heras", secretario: "Mena Mariel", telefono: "2227537992", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.9270, lng: -58.9460 },
+            { municipio: "General Rodríguez", secretario: "Argoitia Jorge Alejandro", telefono: "1130783713", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.6110, lng: -58.9520 },
+            { municipio: "José C. Paz", secretario: "Pesich Omar", telefono: "1144032344", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.5150, lng: -58.7680 },
+            { municipio: "Luján", secretario: "Morales Gabriel Fernando", telefono: "1144182175", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.5630, lng: -59.1210 },
+            { municipio: "Malvinas Argentinas", secretario: "Maldonado Silvia", telefono: "1126571315", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.4670, lng: -58.7000 },
+            { municipio: "Mercedes", secretario: "Fernandez Roxana", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.6510, lng: -59.4310 },
+            { municipio: "Navarro", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -35.0050, lng: -59.2780 },
+            { municipio: "Pilar", secretario: "Miño Luis Alberto", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.4580, lng: -58.9140 },
+            { municipio: "San Fernando", secretario: "Navarreto Jose Rodolfo", telefono: "1166126448", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.4430, lng: -58.5670 },
+            { municipio: "San Isidro", secretario: "Reynoso Alberto Horacio", telefono: "1150416367", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.4670, lng: -58.5170 },
+            { municipio: "Suipacha", secretario: "Couadeau Matias", telefono: "2324685248", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.7700, lng: -59.6890 },
+            { municipio: "Tigre", secretario: "Leonardi Walter Jorge", telefono: "1120310678", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.4260, lng: -58.5800 },
+            { municipio: "Vicente López", secretario: "Pirillo Vicente Primo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region1", lat: -34.5230, lng: -58.4750 },
+
+            // ZONA II - METROPOLITANA OESTE (9 municipios)
+            { municipio: "General San Martín", secretario: "De Lucas Carlos", telefono: "1136775933", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.5740, lng: -58.5370 },
+            { municipio: "Hurlingham", secretario: "Bereta Gaston", telefono: "1162820107", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.5900, lng: -58.6390 },
+            { municipio: "Ituzaingó", secretario: "Colli Miguel Angel", telefono: "1132400768", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.6590, lng: -58.6680 },
+            { municipio: "Marcos Paz", secretario: "Torres Hugo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.7800, lng: -58.8350 },
+            { municipio: "Merlo", secretario: "Cobal Diego", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.6650, lng: -58.7290 },
+            { municipio: "Moreno", secretario: "Orlando Castillo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.6350, lng: -58.7910 },
+            { municipio: "Morón", secretario: "Dure Luis Angel", telefono: "1138040513", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.6510, lng: -58.6190 },
+            { municipio: "San Miguel", secretario: "Iglesias Jorge", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.5430, lng: -58.7120 },
+            { municipio: "Tres de Febrero", secretario: "Roma Claudio", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region2", lat: -34.6010, lng: -58.5630 },
+
+            // ZONA III - NORTE (16 municipios)
+            { municipio: "Arrecifes", secretario: "Maury Juan Jose", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.0640, lng: -60.1050 },
+            { municipio: "Baradero", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -33.8120, lng: -59.5080 },
+            { municipio: "Campana", secretario: "González Jose", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.1680, lng: -58.9590 },
+            { municipio: "Capitán Sarmiento", secretario: "Noriega Alberto", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.1720, lng: -59.7900 },
+            { municipio: "Carmen de Areco", secretario: "Guaquinchay Gilda", telefono: "2325564099", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.3800, lng: -59.8220 },
+            { municipio: "Colón", secretario: "Hector Hugo Pacheco", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -33.8950, lng: -61.1010 },
+            { municipio: "Exaltación de la Cruz", secretario: "Noriega Sandro", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.2920, lng: -59.0950 },
+            { municipio: "Pergamino", secretario: "Enriquez Adalberto", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -33.8900, lng: -60.5730 },
+            { municipio: "Ramallo", secretario: "Oliveros Marta", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -33.4820, lng: -60.0070 },
+            { municipio: "Rojas", secretario: "Alvarado Enrique", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.1950, lng: -60.7350 },
+            { municipio: "Salto", secretario: "Ramirez Susana", telefono: "2474686090", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.2920, lng: -60.2550 },
+            { municipio: "San Andrés de Giles", secretario: "Margadant Armando", telefono: "2325689066", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.4500, lng: -59.4430 },
+            { municipio: "San Antonio de Areco", secretario: "Hurtado Adriana", telefono: "2326431088", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.2480, lng: -59.4700 },
+            { municipio: "San Nicolás", secretario: "Arance Luis Omar", telefono: "1123586667", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -33.3350, lng: -60.2250 },
+            { municipio: "San Pedro", secretario: "Kasta Juan", telefono: "3329525545", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -33.6790, lng: -59.6660 },
+            { municipio: "Zárate", secretario: "Gianfelice Fabian Antonio", telefono: "3487693459", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region3", lat: -34.0980, lng: -59.0280 },
+
+            // ZONA IV - METROPOLITANA SUR (25 municipios)
+            { municipio: "Almirante Brown", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.8030, lng: -58.4010 },
+            { municipio: "Avellaneda", secretario: "Aversa Daniel", telefono: "1135727694", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.6630, lng: -58.3670 },
+            { municipio: "Berazategui", secretario: "Carril Gabriel Campusano", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.7630, lng: -58.2110 },
+            { municipio: "Berisso", secretario: "Rodriguez Jorge Fernando", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.8730, lng: -57.8870 },
+            { municipio: "Coronel Brandsen", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.1720, lng: -58.2340 },
+            { municipio: "Cañuelas", secretario: "Peñalosa Marcos", telefono: "2226680925", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.0560, lng: -58.7610 },
+            { municipio: "Chascomus", secretario: "Roldan Mercedes", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.5720, lng: -58.0080 },
+            { municipio: "Ensenada", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.8600, lng: -57.9010 },
+            { municipio: "Esteban Echeverría", secretario: "Carlos Alberto Campos", telefono: "1140580377", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.8190, lng: -58.4650 },
+            { municipio: "Ezeiza", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.8460, lng: -58.5230 },
+            { municipio: "Florencio Varela", secretario: "D'aquino Dario", telefono: "1149933891", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.7900, lng: -58.2760 },
+            { municipio: "General Belgrano", secretario: "Enrique Rau", telefono: "2243415002", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.7620, lng: -58.4950 },
+            { municipio: "General Paz", secretario: "Speranza Hernan Antonio", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.5300, lng: -58.2990 },
+            { municipio: "Lanús", secretario: "Pedelhez Miguel", telefono: "1168601443", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.7000, lng: -58.3990 },
+            { municipio: "La Matanza", secretario: "Proverbio Marcelo Eduardo", telefono: "1133803727", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.7220, lng: -58.6190 },
+            { municipio: "La Plata", secretario: "Carlos Rodríguez", telefono: "2214567890", email: "contacto@sindicatolaplata.org.ar", direccion: "Calle 12 Nº 789, entre 45 y 46, La Plata", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 1250, servicios: ["Asesoría legal gratuita", "Obra social OSPM", "Capacitaciones laborales", "Asistencia social", "Bolsa de trabajo"], documentos: [{ nombre: "Estatuto Social", url: "documentos/laplata/estatuto.pdf", tipo: "pdf" }, { nombre: "Convenio Colectivo 2024", url: "documentos/laplata/convenio.pdf", tipo: "pdf" }], region: "region4", lat: -34.9214, lng: -57.9544 },
+            { municipio: "Las Flores", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -36.0150, lng: -59.1000 },
+            { municipio: "Lomas de Zamora", secretario: "Luna Eduardo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.7550, lng: -58.4040 },
+            { municipio: "Lobos", secretario: "Pascheco Maximo Exequiel", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.1850, lng: -59.0950 },
+            { municipio: "Magdalena", secretario: "Aramburu Jose Maria", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.0830, lng: -57.5180 },
+            { municipio: "Monte", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.4420, lng: -58.8060 },
+            { municipio: "Presidente Perón", secretario: "Campos Carlos Alberto", telefono: "1140580377", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.9100, lng: -58.3600 },
+            { municipio: "Punta de Indio", secretario: "Bissio Daniel Atilio", telefono: "2223678545", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.2740, lng: -57.2350 },
+            { municipio: "Quilmes", secretario: "Terrizano Ricardo", telefono: "1150369330", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -34.7240, lng: -58.2530 },
+            { municipio: "San Vicente", secretario: "Sosa Juan Domingo", telefono: "1158441428", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region4", lat: -35.0250, lng: -58.4230 },
+
+            // ZONA V - CENTRO OESTE (23 municipios)
+            { municipio: "Alberti", secretario: "Lezama Pablo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.0270, lng: -60.2680 },
+            { municipio: "Ameghino", secretario: "Bottega Marcelo Hugo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -34.8450, lng: -62.4170 },
+            { municipio: "Bragado", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.1190, lng: -60.4890 },
+            { municipio: "Carlos Casares", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.6260, lng: -61.3680 },
+            { municipio: "Carlos Tejedor", secretario: "Cuadrado Stella Maris", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.3920, lng: -62.4210 },
+            { municipio: "Chacabuco", secretario: "Fadel Adolfo Mario", telefono: "2352480484", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -34.6420, lng: -60.4730 },
+            { municipio: "Chivilcoy", secretario: "Diguardi Marilina", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -34.8960, lng: -60.0170 },
+            { municipio: "Daireaux", secretario: "Correa Oscar Anibal", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -36.6000, lng: -61.7500 },
+            { municipio: "General Arenales", secretario: "Mercado Gladys Edith", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -34.2650, lng: -61.3050 },
+            { municipio: "General Pinto", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -34.7670, lng: -61.8900 },
+            { municipio: "General Viamonte", secretario: "Pereyra Aldo Daniel", telefono: "2358410260", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.0000, lng: -61.0330 },
+            { municipio: "General Villegas", secretario: "Piñeyro David Marcelo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.0330, lng: -63.0170 },
+            { municipio: "Hipólito Yrigoyen", secretario: "Neri Maria Rosana", telefono: "2314541495", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -36.2630, lng: -61.7500 },
+            { municipio: "Junín", secretario: "Wavsniovky Angel Gabriel", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -34.5870, lng: -60.9430 },
+            { municipio: "Leandro N. Alem", secretario: "Dinati Jorge", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -34.5170, lng: -61.4000 },
+            { municipio: "Lincoln", secretario: "Cataldo Alejandra", telefono: "2355583250", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -34.8650, lng: -61.5310 },
+            { municipio: "Nueve de Julio", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.4440, lng: -60.8830 },
+            { municipio: "Pehuajó", secretario: "Oriani Arturo Leandro", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.8100, lng: -61.8970 },
+            { municipio: "Pellegrini", secretario: "Sanches Nestor", telefono: "2392620469", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -36.2650, lng: -63.1650 },
+            { municipio: "Rivadavia", secretario: "Velez Mariana", telefono: "2392635984", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.5330, lng: -63.1170 },
+            { municipio: "Salliqueló", secretario: "Verhulst Erica", telefono: "2392519803", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -36.7500, lng: -62.9670 },
+            { municipio: "Trenque Lauquen", secretario: "Barreta Monica Liliana", telefono: "2392493823", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -35.9700, lng: -62.7330 },
+            { municipio: "Tres Lomas", secretario: "Perez Jose Luis", telefono: "2392521103", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region5", lat: -36.4670, lng: -62.8670 },
+
+            // ZONA VI - SUDESTE (22 municipios)
+            { municipio: "Ayacucho", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -37.1520, lng: -58.4870 },
+            { municipio: "Balcarce", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -37.8460, lng: -58.2550 },
+            { municipio: "Castelli", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.0950, lng: -57.7860 },
+            { municipio: "De la Costa", secretario: "Rajoy Miguel", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.6300, lng: -56.6800 },
+            { municipio: "Dolores", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.3130, lng: -57.6790 },
+            { municipio: "General Alvarado", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -38.1470, lng: -57.9890 },
+            { municipio: "General Guido", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.6670, lng: -57.7830 },
+            { municipio: "General Lavalle", secretario: "Mena Walter Hernan", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.4170, lng: -56.9430 },
+            { municipio: "General Madariaga", secretario: "Campos Carlos Alberto", telefono: "1140580377", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -37.0020, lng: -57.1350 },
+            { municipio: "General Pueyrredón", secretario: "Cardoso Marcelo Norberto", telefono: "2235966870", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -38.0000, lng: -57.5500 },
+            { municipio: "Lezama", secretario: "Villalon Maria Laura", telefono: "2241553660", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -35.8670, lng: -57.9000 },
+            { municipio: "Lobería", secretario: "Basualdo Jose Manuel", telefono: "2262599917", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -38.1550, lng: -58.7910 },
+            { municipio: "Maipú", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.8650, lng: -57.8800 },
+            { municipio: "Mar Chiquita", secretario: "Zotta Jose Luis", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -37.4170, lng: -57.7170 },
+            { municipio: "Necochea", secretario: "Sosa Silvia", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -38.5470, lng: -58.7370 },
+            { municipio: "Pila", secretario: "Antonelli Beatriz Nidia", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.0000, lng: -58.1330 },
+            { municipio: "Pinamar", secretario: "Rolon Jorge Daniel", telefono: "2267401067", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -37.1080, lng: -56.8610 },
+            { municipio: "Rauch", secretario: "Ratiggen Maximiliano", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.7750, lng: -59.0900 },
+            { municipio: "San Cayetano", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -38.3450, lng: -59.6100 },
+            { municipio: "Tandil", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -37.3220, lng: -59.1330 },
+            { municipio: "Tordillo", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -36.3500, lng: -57.2500 },
+            { municipio: "Villa Gesell", secretario: "Mauro Jorge", telefono: "2267675748", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region6", lat: -37.2640, lng: -56.9730 },
+
+            // ZONA VII - SUDOESTE (10 municipios)
+            { municipio: "Adolfo Alsina", secretario: "Olivera Juan Jose", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -37.5250, lng: -62.5000 },
+            { municipio: "Benito Juárez", secretario: "Andrade Hector", telefono: "2281550174", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -37.6730, lng: -59.8010 },
+            { municipio: "Coronel Dorrego", secretario: "Fortunato Domingo", telefono: "2921495021", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -38.7170, lng: -61.2870 },
+            { municipio: "Coronel Pringles", secretario: "Bustos Susana", telefono: "2914664030", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -37.9820, lng: -61.3550 },
+            { municipio: "Coronel Suarez", secretario: "Gotte Ernesto Alfredo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -37.4560, lng: -61.9330 },
+            { municipio: "General Lamadrid", secretario: "Andrade Hector", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -37.2500, lng: -61.2500 },
+            { municipio: "González Chávez", secretario: "Martinez Marcos Cesar Agustin", telefono: "2983554533", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -38.0330, lng: -60.1000 },
+            { municipio: "Guaminí", secretario: "De la Canal Marcelo Ricardo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -37.0330, lng: -62.4170 },
+            { municipio: "Laprida", secretario: "Tumini Soledad", telefono: "2284507262", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -37.5440, lng: -60.8000 },
+            { municipio: "Tres Arroyos", secretario: "Tosone Diego Fabian", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region7", lat: -38.3740, lng: -60.2800 },
+
+            // ZONA VIII - SUR (8 municipios)
+            { municipio: "Bahía Blanca", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region8", lat: -38.7180, lng: -62.2660 },
+            { municipio: "Coronel Rosales", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region8", lat: -38.8500, lng: -62.0670 },
+            { municipio: "Monte Hermoso", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region8", lat: -38.9820, lng: -61.3000 },
+            { municipio: "Patagones", secretario: "Perez Julio Adrian", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region8", lat: -40.8000, lng: -62.9830 },
+            { municipio: "Puán", secretario: "Cofre Juan", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region8", lat: -37.5450, lng: -62.7680 },
+            { municipio: "Saavedra", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region8", lat: -37.7620, lng: -62.3500 },
+            { municipio: "Tornquist", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region8", lat: -38.1000, lng: -62.2330 },
+            { municipio: "Villarino", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region8", lat: -39.8330, lng: -62.6170 },
+
+            // ZONA IX - CENTRO (8 municipios)
+            { municipio: "Azul", secretario: "Ruben Rodriguez", telefono: "2281520410", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region9", lat: -36.7770, lng: -59.8590 },
+            { municipio: "Bolívar", secretario: "Montealegre Alejandro", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region9", lat: -36.2310, lng: -61.1100 },
+            { municipio: "General Alvear", secretario: "Torrilla Patricia Cecilia", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region9", lat: -36.0330, lng: -60.0170 },
+            { municipio: "Olavarría", secretario: "Quinteros Renzo", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region9", lat: -36.8920, lng: -60.3220 },
+            { municipio: "Roque Pérez", secretario: "Reina Maria Esther", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region9", lat: -35.3980, lng: -59.3320 },
+            { municipio: "Saladillo", secretario: "", telefono: "", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region9", lat: -35.6380, lng: -59.7780 },
+            { municipio: "Tapalqué", secretario: "Bordenave Miguel Angel", telefono: "2281357132", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region9", lat: -36.3550, lng: -60.0260 },
+            { municipio: "Veinticinco de Mayo", secretario: "Lafuente Jorge Manuel", telefono: "2345664350", email: "", direccion: "", horarios: "Lunes a Viernes 8:00-16:00", afiliados: 0, servicios: ["Asesoría legal", "Obra social"], documentos: [], region: "region9", lat: -35.4320, lng: -60.1730 }
+        ];
+                // Inicializar el mapa
+        const map = L.map('map').setView([-37.2017, -59.8410], 7);
+
+        // Añadir capa de tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Crear un grupo de capas para los marcadores
+        const markers = L.layerGroup().addTo(map);
+
+        // Función para generar las iniciales del secretario
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(n => n[0]).join('').toUpperCase();
+        }
+
+        // Función para formatear teléfono
+        function formatearTelefono(telefono) {
+            if (!telefono) return 'No disponible';
+            // Remover espacios y guiones
+            const limpio = telefono.toString().replace(/\D/g, '');
+            
+            if (limpio.length === 10) {
+                return `(${limpio.substring(0, 2)}) ${limpio.substring(2, 6)}-${limpio.substring(6)}`;
+            } else if (limpio.length === 8) {
+                return `${limpio.substring(0, 4)}-${limpio.substring(4)}`;
+            }
+            return telefono;
+        }
+
+        // FUNCIONES DE EXPORTACIÓN
+        function exportToMyMaps() {
+            const csv = generarCSVParaMyMaps();
+            descargarArchivo(csv, 'sindicatos_my_maps.csv', 'text/csv');
+            alert('Archivo descargado! Ahora ve a Google My Maps e impórtalo.');
+        }
+
+        function exportToCSV() {
+            const csv = generarCSVCompleto();
+            descargarArchivo(csv, 'sindicatos_completo.csv', 'text/csv');
+        }
+
+        function exportToJSON() {
+            const json = JSON.stringify(sindicatos, null, 2);
+            descargarArchivo(json, 'sindicatos.json', 'application/json');
+        }
+
+        function generarCSVCompleto() {
+            let csv = 'Municipio,Secretario,Telefono,Email,Direccion,Horarios,Afiliados,Servicios,Region,Latitud,Longitud\n';
+            
+            sindicatos.forEach(s => {
+                csv += `"${s.municipio}","${s.secretario || ''}","${s.telefono || ''}","${s.email || ''}","${s.direccion || ''}","${s.horarios || ''}","${s.afiliados || ''}","${(s.servicios || []).join('; ')}","${regiones[s.region].nombre}",${s.lat},${s.lng}\n`;
+            });
+            
+            return csv;
+        }
+
+        function generarCSVParaMyMaps() {
+            let csv = 'Nombre,Descripción,Dirección,Latitud,Longitud\n';
+            
+            sindicatos.forEach(s => {
+                const descripcion = `
+Secretario: ${s.secretario || 'No disponible'}
+Teléfono: ${s.telefono || 'No disponible'} 
+Email: ${s.email || 'No disponible'}
+Horarios: ${s.horarios || 'No disponible'}
+Afiliados: ${s.afiliados || 'No disponible'}
+Servicios: ${(s.servicios || []).join(', ')}
+Región: ${regiones[s.region].nombre}
+                `.trim().replace(/\n/g, ' | ');
+                
+                csv += `"${s.municipio}","${descripcion}","${s.direccion || ''}",${s.lat},${s.lng}\n`;
+            });
+            
+            return csv;
+        }
+
+        function descargarArchivo(contenido, nombre, tipo) {
+            const blob = new Blob([contenido], { type: `${tipo};charset=utf-8;` });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = nombre;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+                // Función para crear el contenido del popup
+        function crearPopup(sindicato) {
+
+            const region = regiones[sindicato.region];
+            const tieneFoto = sindicato.fotoSecretario;
+            
+            // Verificar si tiene redes sociales
+            const tieneRedes = sindicato.redesSociales && sindicato.redesSociales.length > 0;
+            
+            return `
+                <div class="popup-header">
+                    <h3>${sindicato.municipio}</h3>
+                    <span class="region-badge" style="background: ${region.color}; color: white;">${region.nombre}</span>
+                </div>
+                <div class="popup-content">
+                    ${tieneFoto ? `
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <img src="${sindicato.fotoSecretario}" alt="${sindicato.secretario}" class="foto-secretario" 
+                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiByeD0iNDAiIGZpbGw9IiMxRTNDNzIiLz4KPHRleHQgeD0iNDAiIHk9IjQ1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIyMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIj4${btoa(getInitials(sindicato.secretario))}</dGV4dD4KPC9zdmc+'">
+                    </div>
+                    ` : `
+                    <div class="popup-secretario">
+                        <div class="popup-secretario-img">
+                            ${getInitials(sindicato.secretario)}
+                        </div>
+                        <div class="popup-secretario-info">
+                            <h4>${sindicato.secretario || 'No disponible'}</h4>
+                            <p>Secretario General</p>
+                        </div>
+                    </div>
+                    `}
+                    
+                    <div class="info-line">
+                        <i class="fas fa-user"></i>
+                        <span><strong>Secretario:</strong> ${sindicato.secretario || 'No disponible'}</span>
+                    </div>
+                    
+                    ${sindicato.telefono ? `
+                    <div class="info-line">
+                        <i class="fas fa-phone"></i>
+                        <span><strong>Teléfono:</strong> ${formatearTelefono(sindicato.telefono)}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${sindicato.email ? `
+                    <div class="info-line">
+                        <i class="fas fa-envelope"></i>
+                        <span><strong>Email:</strong> ${sindicato.email}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${sindicato.direccion ? `
+                    <div class="info-line">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span><strong>Dirección:</strong> ${sindicato.direccion}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${sindicato.horarios ? `
+                    <div class="info-line">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>Horarios:</strong> ${sindicato.horarios}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${sindicato.afiliados ? `
+                    <div class="info-line">
+                        <i class="fas fa-users"></i>
+                        <span><strong>Afiliados:</strong> ${sindicato.afiliados}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${sindicato.servicios && sindicato.servicios.length > 0 ? `
+                    <div class="info-line">
+                        <i class="fas fa-list"></i>
+                        <span><strong>Servicios:</strong></span>
+                    </div>
+                    <div class="servicios-list">
+                        ${sindicato.servicios.map(servicio => 
+                            `<span class="servicio-tag">${servicio}</span>`
+                        ).join('')}
+                    </div>
+                    ` : ''}
+                    
+                    ${tieneRedes ? `
+                    <div class="info-line">
+                        <i class="fas fa-share-alt"></i>
+                        <span><strong>Redes Sociales:</strong></span>
+                    </div>
+                    <div class="servicios-list">
+                        ${sindicato.redesSociales.map(red => 
+                            `<a href="${red.url}" target="_blank" class="servicio-tag" style="background: #1e3c72; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                <i class="fab fa-${red.plataforma.toLowerCase()}"></i> ${red.plataforma}
+                            </a>`
+                        ).join('')}
+                    </div>
+                    ` : ''}
+                    
+                    ${sindicato.documentos && sindicato.documentos.length > 0 ? `
+                    <div class="info-line">
+                        <i class="fas fa-file"></i>
+                        <span><strong>Documentos:</strong></span>
+                    </div>
+                    <div class="documentos-list">
+                        ${sindicato.documentos.map(doc => 
+                            `<div class="documento-item">
+                                <i class="fas fa-file-${doc.tipo || 'pdf'}"></i>
+                                <a href="${doc.url}" target="_blank" style="color: #1e3c72; text-decoration: none;">${doc.nombre}</a>
+                            </div>`
+                        ).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+                
+                ${sindicato.telefono ? `
+                <div class="contact-buttons">
+                    <a href="tel:${sindicato.telefono}" class="contact-btn">
+                        <i class="fas fa-phone"></i> Llamar
+                    </a>
+                    <a href="https://wa.me/54${sindicato.telefono}" class="contact-btn" style="background: #25D366;">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </a>
+                    ${sindicato.email ? `
+                    <a href="mailto:${sindicato.email}" class="contact-btn" style="background: #ea4335;">
+                        <i class="fas fa-envelope"></i> Email
+                    </a>
+                    ` : ''}
+                    ${sindicato.direccion ? `
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sindicato.direccion)}" 
+                       class="contact-btn" style="background: #0f9d58;" target="_blank">
+                        <i class="fas fa-directions"></i> Cómo llegar
+                    </a>
+                    ` : ''}
+                </div>
+                ` : ''}
+            `;
+        }
+            const regionList = document.getElementById('regionList');
+            regionList.innerHTML = '';
+            
+            // Opción "Todas las regiones"
+            const allItem = document.createElement('li');
+            allItem.className = 'active';
+            allItem.setAttribute('data-region', 'all');
+            allItem.innerHTML = `
+                Todas las regiones
+                <span class="municipio-count">${sindicatos.length}</span>
+            `;
+            regionList.appendChild(allItem);
+            
+            // Cargar cada región
+            Object.keys(regiones).forEach(regionKey => {
+                const region = regiones[regionKey];
+                const municipiosEnRegion = sindicatos.filter(s => s.region === regionKey).length;
+                const item = document.createElement('li');
+                item.setAttribute('data-region', regionKey);
+                item.innerHTML = `
+                    ${region.nombre}
+                    <span class="municipio-count">${municipiosEnRegion}</span>
+                `;
+                regionList.appendChild(item);
+            });
+            
+            // Agregar event listeners
+            document.querySelectorAll('#regionList li').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('#regionList li').forEach(li => {
+                        li.classList.remove('active');
+                    });
+                    item.classList.add('active');
+                    
+                    const region = item.getAttribute('data-region');
+                    filtrarPorRegion(region);
+                });
+            });
+        
+
+        // Función para filtrar por región
+        function filtrarPorRegion(region) {
+            let sindicatosFiltrados;
+            
+            if (region === 'all') {
+                sindicatosFiltrados = sindicatos;
+            } else {
+                sindicatosFiltrados = sindicatos.filter(s => s.region === region);
+            }
+            
+            mostrarSindicatos(sindicatosFiltrados);
+            actualizarMarcadores(sindicatosFiltrados);
+        }
+
+        // Función para mostrar sindicatos en la lista
+        function mostrarSindicatos(sindicatosMostrar) {
+            const sindicatosList = document.getElementById('sindicatosList');
+            
+            if (sindicatosMostrar.length === 0) {
+                sindicatosList.innerHTML = '<div class="empty-state"><i class="fas fa-info-circle"></i><h3>No hay datos</h3><p>No se encontraron sindicatos para esta región</p></div>';
+                return;
+            }
+            
+            sindicatosList.innerHTML = '';
+            
+            sindicatosMostrar.forEach(sindicato => {
+                const region = regiones[sindicato.region];
+                const card = document.createElement('div');
+                card.className = 'sindicato-card';
+                card.innerHTML = `
+                    <h3>${sindicato.municipio}</h3>
+                    <div class="location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        ${region.nombre}
+                    </div>
+                    <div class="contact">
+                        <i class="fas fa-user"></i>
+                        ${sindicato.secretario || 'Secretario no disponible'}
+                    </div>
+                    ${sindicato.telefono ? `
+                    <div class="contact">
+                        <i class="fas fa-phone"></i>
+                        ${formatearTelefono(sindicato.telefono)}
+                    </div>
+                    ` : ''}
+                    <div class="secretario">
+                        <div class="secretario-img">
+                            ${getInitials(sindicato.secretario)}
+                        </div>
+                        <div class="secretario-info">
+                            <h4>${sindicato.secretario || 'No disponible'}</h4>
+                            <p>Secretario General</p>
+                        </div>
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => {
+                    map.setView([sindicato.lat, sindicato.lng], 10);
+                    // Abrir popup del marcador correspondiente
+                    markers.getLayers().forEach(layer => {
+                        if (layer.getLatLng().lat === sindicato.lat && layer.getLatLng().lng === sindicato.lng) {
+                            layer.openPopup();
+                        }
+                    });
+                });
+                
+                sindicatosList.appendChild(card);
+            });
+        }
+
+        // Función para actualizar marcadores en el mapa
+        function actualizarMarcadores(sindicatosMostrar) {
+            markers.clearLayers();
+            
+            sindicatosMostrar.forEach(sindicato => {
+                const marker = L.marker([sindicato.lat, sindicato.lng])
+                    .bindPopup(crearPopup(sindicato));
+                markers.addLayer(marker);
+            });
+        }
+
+        // Buscar sindicatos
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                const activeRegion = document.querySelector('#regionList li.active').getAttribute('data-region');
+                filtrarPorRegion(activeRegion);
+                return;
+            }
+            
+            const sindicatosFiltrados = sindicatos.filter(s => 
+                s.municipio.toLowerCase().includes(searchTerm) || 
+                (s.secretario && s.secretario.toLowerCase().includes(searchTerm))
+            );
+            
+            mostrarSindicatos(sindicatosFiltrados);
+            actualizarMarcadores(sindicatosFiltrados);
+        });
+
+        // Inicializar la aplicación
+        cargarRegiones();
+        filtrarPorRegion('all'); // Mostrar todos los sindicatos al inicio
+    </script>
+</body>
+</html>
